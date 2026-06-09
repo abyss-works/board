@@ -20,6 +20,11 @@ export interface CreatePostRequest {
   author: string
 }
 
+export interface UpdatePostRequest {
+  title: string
+  content: string
+}
+
 export interface CreateCommentRequest {
   content: string
   author: string
