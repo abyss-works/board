@@ -20,5 +20,5 @@ jobs:
         run: |
           kubectl set image deployment/community-board \
             community-board=community-board:production \
-            -n prod
-          kubectl rollout status deployment/community-board -n prod --timeout=180s
+            -n board-prod
+          kubectl rollout status deployment/community-board -n board-prod --timeout=180s
