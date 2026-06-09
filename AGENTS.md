@@ -17,6 +17,20 @@
 | 빌드 | `go build -o board .` |
 | 배포 | Docker → kind k8s 클러스터 |
 
+## 로컬 저장소 경로 규칙
+
+모든 Git 저장소는 `~/<org-name>/<repo-name>/` 경로에 clone한다.
+
+| 저장소 | 로컬 경로 |
+|--------|----------|
+| `abyss-works/board` | `~/abyss-works/board/` |
+| `abyss-works/health` | `~/abyss-works/health/` |
+| `abyss-works/index` | `~/abyss-works/index/` |
+| `wsssafy/ssafy-pjt` | `~/wsssafy/ssafy-pjt/` |
+
+올바른 예: `~/abyss-works/board/`, `~/wsssafy/ssafy-pjt/`
+잘못된 예: `~/springboot-app/community-board/`, `~/ssafy-pjt/`
+
 ## 디렉토리 구조
 
 ```
