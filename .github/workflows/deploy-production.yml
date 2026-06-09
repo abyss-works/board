@@ -1,0 +1,24 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, preview]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t community-board:production .
+
+      - name: Load image into kind cluster
+        run: kind load docker-image community-board:production --name kind
+
+      - name: Deploy to prod
+        run: |
+          kubectl set image deployment/community-board \
+            community-board=community-board:production \
+            -n prod
+          kubectl rollout status deployment/community-board -n prod --timeout=180s
