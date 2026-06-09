@@ -132,7 +132,8 @@ func handlePosts(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		rows, err := db.Query("SELECT id, title, content, author, created_at FROM posts ORDER BY created_at DESC")
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			log.Printf("handlePosts GET: %v", err)
+			http.Error(w, "Internal server error", 500)
 			return
 		}
 		defer rows.Close()
@@ -159,7 +160,8 @@ func handlePosts(w http.ResponseWriter, r *http.Request) {
 			p.Title, p.Content, p.Author,
 		).Scan(&p.ID, &p.CreatedAt)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			log.Printf("handlePosts POST: %v", err)
+			http.Error(w, "Internal server error", 500)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -211,7 +213,8 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 	case "GET":
 		rows, err := db.Query("SELECT id, post_id, content, author, created_at FROM comments WHERE post_id=$1 ORDER BY created_at ASC", postID)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			log.Printf("handlePostComments GET: %v", err)
+			http.Error(w, "Internal server error", 500)
 			return
 		}
 		defer rows.Close()
@@ -239,7 +242,8 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 			c.PostID, c.Content, c.Author,
 		).Scan(&c.ID, &c.CreatedAt)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			log.Printf("handlePostComments POST: %v", err)
+			http.Error(w, "Internal server error", 500)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
