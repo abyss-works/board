@@ -3,15 +3,18 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchPost } from '@/api/posts'
 import { fetchComments, createComment } from '@/api/comments'
+import { usePostStore } from '@/stores/postStore'
 import type { Post, Comment } from '@/types'
 import CommentItem from '@/components/CommentItem.vue'
 
 const route = useRoute()
 const router = useRouter()
+const store = usePostStore()
 const post = ref<Post | null>(null)
 const comments = ref<Comment[]>([])
 const newComment = ref('')
 const author = ref('')
+const deleting = ref(false)
 
 const postId = Number(route.params.id)
 
@@ -29,6 +32,13 @@ async function submitComment() {
   comments.value.push(comment)
   newComment.value = ''
 }
+
+async function handleDelete() {
+  if (!confirm('정말 삭제하시겠습니까?')) return
+  deleting.value = true
+  await store.removePost(postId)
+  router.push('/')
+}
 </script>
 
 <template>
@@ -40,12 +50,29 @@ async function submitComment() {
       ← 목록으로
     </button>
 
-    <article v-if="post">
-      <h1 class="text-2xl font-serif font-semibold mb-3">{{ post.title }}</h1>
+    <article v-if="post" class="mb-12">
+      <div class="flex items-start justify-between gap-4 mb-3">
+        <h1 class="text-2xl font-serif font-semibold">{{ post.title }}</h1>
+        <div class="flex gap-2 shrink-0">
+          <button
+            @click="router.push(`/posts/${postId}/edit`)"
+            class="px-3 py-1.5 text-xs border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            수정
+          </button>
+          <button
+            @click="handleDelete"
+            :disabled="deleting"
+            class="px-3 py-1.5 text-xs border border-red-200 rounded-md text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+          >
+            {{ deleting ? '삭제 중...' : '삭제' }}
+          </button>
+        </div>
+      </div>
       <p class="text-sm text-gray-500 mb-8">
         {{ post.author }} · {{ new Date(post.createdAt).toLocaleDateString('ko-KR') }}
       </p>
-      <div class="prose prose-gray max-w-none mb-12 whitespace-pre-wrap">{{ post.content }}</div>
+      <div class="prose prose-gray max-w-none whitespace-pre-wrap">{{ post.content }}</div>
     </article>
 
     <section class="border-t border-gray-200 pt-8">

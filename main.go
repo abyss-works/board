@@ -76,7 +76,9 @@ func initDB() {
 			title TEXT NOT NULL,
 			content TEXT NOT NULL,
 			author TEXT NOT NULL DEFAULT 'Anonymous',
-			created_at TIMESTAMP DEFAULT NOW()
+			created_at TIMESTAMP DEFAULT NOW(),
+			updated_at TIMESTAMP,
+			deleted_at TIMESTAMP
 		);
 		CREATE TABLE IF NOT EXISTS comments (
 			id SERIAL PRIMARY KEY,
@@ -89,6 +91,9 @@ func initDB() {
 	if err != nil {
 		log.Fatalf("Failed to create tables: %v", err)
 	}
+	// 기존 테이블에 컬럼이 없으면 추가 (마이그레이션)
+	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`)
+	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`)
 	log.Println("Database initialized successfully")
 }
 
@@ -130,7 +135,7 @@ func spaHandler() http.Handler {
 func handlePosts(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rows, err := db.Query("SELECT id, title, content, author, created_at FROM posts ORDER BY created_at DESC")
+		rows, err := db.Query("SELECT id, title, content, author, created_at FROM posts WHERE deleted_at IS NULL ORDER BY created_at DESC")
 		if err != nil {
 			log.Printf("handlePosts GET: %v", err)
 			http.Error(w, "Internal server error", 500)
@@ -194,20 +199,73 @@ func handlePostByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "GET" {
+	switch r.Method {
+	case "GET":
 		var p Post
-		err := db.QueryRow("SELECT id, title, content, author, created_at FROM posts WHERE id=$1", postID).
+		err := db.QueryRow("SELECT id, title, content, author, created_at FROM posts WHERE id=$1 AND deleted_at IS NULL", postID).
 			Scan(&p.ID, &p.Title, &p.Content, &p.Author, &p.CreatedAt)
-		if err != nil {
+		if err == sql.ErrNoRows {
 			http.Error(w, "Post not found", 404)
+			return
+		}
+		if err != nil {
+			log.Printf("handlePostByID GET: %v", err)
+			http.Error(w, "Internal server error", 500)
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(p)
-		return
-	}
 
-	http.Error(w, "Method not allowed", 405)
+	case "PUT":
+		var req struct {
+			Title   string `json:"title"`
+			Content string `json:"content"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Title == "" || req.Content == "" {
+			http.Error(w, "Title and content required", 400)
+			return
+		}
+		result, err := db.Exec(
+			"UPDATE posts SET title=$1, content=$2, updated_at=NOW() WHERE id=$3 AND deleted_at IS NULL",
+			req.Title, req.Content, postID,
+		)
+		if err != nil {
+			log.Printf("handlePostByID PUT: %v", err)
+			http.Error(w, "Internal server error", 500)
+			return
+		}
+		affected, _ := result.RowsAffected()
+		if affected == 0 {
+			http.Error(w, "Post not found", 404)
+			return
+		}
+		var p Post
+		db.QueryRow("SELECT id, title, content, author, created_at FROM posts WHERE id=$1", postID).
+			Scan(&p.ID, &p.Title, &p.Content, &p.Author, &p.CreatedAt)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(p)
+
+	case "DELETE":
+		result, err := db.Exec(
+			"UPDATE posts SET deleted_at=NOW() WHERE id=$1 AND deleted_at IS NULL",
+			postID,
+		)
+		if err != nil {
+			log.Printf("handlePostByID DELETE: %v", err)
+			http.Error(w, "Internal server error", 500)
+			return
+		}
+		affected, _ := result.RowsAffected()
+		if affected == 0 {
+			http.Error(w, "Post not found", 404)
+			return
+		}
+		w.WriteHeader(204)
+
+	default:
+		http.Error(w, "Method not allowed", 405)
+	}
 }
 
 func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {

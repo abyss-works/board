@@ -35,7 +35,7 @@ jobs:
         run: |
           gh pr comment ${{ github.event.number }} \
             --repo ${{ github.repository }} \
-            --body "🚀 Preview ready: https://preview-${{ github.event.number }}.board.abyssworks.dev"
+            --body "🚀 Preview ready: https://preview-board-${{ github.event.number }}.abyssworks.dev"
 
   cleanup-preview:
     if: github.event.action == 'closed'

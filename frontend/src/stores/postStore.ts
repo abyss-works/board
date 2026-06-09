@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { fetchPosts as apiFetchPosts, createPost as apiCreatePost } from '@/api/posts'
-import type { Post, CreatePostRequest } from '@/types'
+import { fetchPosts as apiFetchPosts, createPost as apiCreatePost, updatePost as apiUpdatePost, deletePost as apiDeletePost } from '@/api/posts'
+import type { Post, CreatePostRequest, UpdatePostRequest } from '@/types'
 
 export const usePostStore = defineStore('post', () => {
   const posts = ref<Post[]>([])
@@ -22,5 +22,17 @@ export const usePostStore = defineStore('post', () => {
     return post
   }
 
-  return { posts, loading, loadPosts, addPost }
+  async function updatePost(id: number, req: UpdatePostRequest) {
+    const updated = await apiUpdatePost(id, req)
+    const idx = posts.value.findIndex(p => p.id === id)
+    if (idx !== -1) posts.value[idx] = updated
+    return updated
+  }
+
+  async function removePost(id: number) {
+    await apiDeletePost(id)
+    posts.value = posts.value.filter(p => p.id !== id)
+  }
+
+  return { posts, loading, loadPosts, addPost, updatePost, removePost }
 })
