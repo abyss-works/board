@@ -10,7 +10,7 @@
 | 항목 | 내용 |
 |------|------|
 | 저장소 | `abyss-works/board` |
-| 언어 | Go 1.22 |
+| 언어 | Go 1.25 |
 | DB | PostgreSQL (lib/pq) |
 | API | REST (net/http, no framework) |
 | 프론트엔드 | 임베디드 정적 파일 (`embed.FS`) |
@@ -59,6 +59,20 @@ go vet ./...                          # 정적 분석
 - PostgreSQL: 동일 클러스터 내 StatefulSet
 
 ## 커밋 컨벤션
+
+### 브랜치 전략
+
+- `main` — 릴리즈 브랜치. PR merge 시 자동 배포 + 버전 태그(v*) 시 GitHub Release 생성
+- `dev` — 개발/다듬기 브랜치. 여기서 작업 후 PR → main
+- feature 브랜치 — `feat/*` 또는 `fix/*` (작업 브랜치, dev base)
+
+### 릴리즈 버저닝
+
+- 현재 버전: **v0.1.0** (나그네 익명 커뮤니티)
+- `v*` 태그 push → GitHub Release 자동 생성 + 버전별 Docker 이미지 빌드
+- 버전은 `vMAJOR.MINOR.PATCH` (SemVer)
+
+### 커밋 메시지
 
 - 타입: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`
 - 제목: 한글 30자 이내, 명사형 종결

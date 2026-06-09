@@ -3,9 +3,11 @@ name: Deploy Production
 on:
   push:
     branches: [main]
+    tags: ["v*"]
 
 jobs:
   deploy:
+    if: github.ref_type == 'branch'
     runs-on: [self-hosted, preview]
     steps:
       - uses: actions/checkout@v4
@@ -22,3 +24,25 @@ jobs:
             board=board:prod \
             -n board-prod
           kubectl rollout status deployment/board -n board-prod --timeout=180s
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: [self-hosted, preview]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build versioned Docker image
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          docker build -t board:$VERSION .
+          kind load docker-image board:$VERSION --name kind
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes
