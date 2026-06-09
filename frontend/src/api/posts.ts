@@ -12,7 +12,9 @@ export async function fetchPost(id: number): Promise<Post> {
 }
 
 export async function createPost(req: CreatePostRequest): Promise<Post> {
-  const { data } = await api.post<Post>('/posts', req)
+  const body: Record<string, string> = { title: req.title, content: req.content }
+  if (req.password) body.password = req.password
+  const { data } = await api.post<Post>('/posts', body)
   return data
 }
 
@@ -21,6 +23,6 @@ export async function updatePost(id: number, req: UpdatePostRequest): Promise<Po
   return data
 }
 
-export async function deletePost(id: number): Promise<void> {
-  await api.delete(`/posts/${id}`)
+export async function deletePost(id: number, password: string): Promise<void> {
+  await api.delete(`/posts/${id}`, { data: { password } })
 }

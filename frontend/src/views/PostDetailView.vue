@@ -13,8 +13,10 @@ const store = usePostStore()
 const post = ref<Post | null>(null)
 const comments = ref<Comment[]>([])
 const newComment = ref('')
-const author = ref('')
 const deleting = ref(false)
+const deletePassword = ref('')
+const showDeletePrompt = ref(false)
+const deleteError = ref('')
 
 const postId = Number(route.params.id)
 
@@ -27,17 +29,23 @@ async function submitComment() {
   if (!newComment.value.trim()) return
   const comment = await createComment(postId, {
     content: newComment.value,
-    author: author.value || '익명',
+    author: '나그네',
   })
   comments.value.push(comment)
   newComment.value = ''
 }
 
 async function handleDelete() {
-  if (!confirm('정말 삭제하시겠습니까?')) return
+  if (!deletePassword.value) return
   deleting.value = true
-  await store.removePost(postId)
-  router.push('/')
+  deleteError.value = ''
+  try {
+    await store.removePost(postId, deletePassword.value)
+    router.push('/')
+  } catch {
+    deleteError.value = '비밀번호가 일치하지 않습니다'
+    deleting.value = false
+  }
 }
 </script>
 
@@ -61,19 +69,45 @@ async function handleDelete() {
             수정
           </button>
           <button
-            @click="handleDelete"
-            :disabled="deleting"
-            class="px-3 py-1.5 text-xs border border-red-200 rounded-md text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+            @click="showDeletePrompt = true"
+            class="px-3 py-1.5 text-xs border border-red-200 rounded-md text-red-500 hover:bg-red-50 transition-colors"
           >
-            {{ deleting ? '삭제 중...' : '삭제' }}
+            삭제
           </button>
         </div>
       </div>
       <p class="text-sm text-gray-500 mb-8">
-        {{ post.author }} · {{ new Date(post.createdAt).toLocaleDateString('ko-KR') }}
+        나그네 · {{ new Date(post.createdAt).toLocaleDateString('ko-KR') }}
       </p>
       <div class="prose prose-gray max-w-none whitespace-pre-wrap">{{ post.content }}</div>
     </article>
+
+    <!-- 삭제 비밀번호 입력 -->
+    <div v-if="showDeletePrompt" class="mb-8 p-4 bg-red-50 border border-red-200 rounded-md">
+      <p class="text-sm font-medium text-red-700 mb-2">글을 삭제하려면 비밀번호를 입력하세요</p>
+      <div class="flex gap-2">
+        <input
+          v-model="deletePassword"
+          type="password"
+          placeholder="비밀번호"
+          class="flex-1 px-3 py-2 bg-white rounded-md text-sm border border-red-200 focus:outline-none focus:ring-2 focus:ring-red-300"
+        />
+        <button
+          @click="handleDelete"
+          :disabled="deleting"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+        >
+          {{ deleting ? '삭제 중...' : '확인' }}
+        </button>
+        <button
+          @click="showDeletePrompt = false; deletePassword = ''; deleteError = ''"
+          class="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          취소
+        </button>
+      </div>
+      <p v-if="deleteError" class="text-red-600 text-xs mt-1">{{ deleteError }}</p>
+    </div>
 
     <section class="border-t border-gray-200 pt-8">
       <h2 class="text-sm font-medium text-gray-500 mb-6">댓글 {{ comments.length }}개</h2>
@@ -89,11 +123,6 @@ async function handleDelete() {
       </ul>
 
       <div class="space-y-3">
-        <input
-          v-model="author"
-          placeholder="이름 (선택)"
-          class="w-full px-3 py-2 bg-gray-50 rounded-md text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
-        />
         <textarea
           v-model="newComment"
           placeholder="댓글을 입력하세요"

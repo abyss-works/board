@@ -14,6 +14,7 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed frontend/dist/*
@@ -94,6 +95,7 @@ func initDB() {
 	// 기존 테이블에 컬럼이 없으면 추가 (마이그레이션)
 	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`)
 	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`)
+	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS password_hash TEXT`)
 	log.Println("Database initialized successfully")
 }
 
@@ -156,20 +158,37 @@ func handlePosts(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(posts)
 
 	case "POST":
-		var p Post
-		json.NewDecoder(r.Body).Decode(&p)
-		if p.Author == "" {
-			p.Author = "Anonymous"
+		var req struct {
+			Title   string `json:"title"`
+			Content string `json:"content"`
+			Password string `json:"password"`
 		}
+		json.NewDecoder(r.Body).Decode(&req)
+		author := "나그네"
+		var passwordHash *string
+		if req.Password != "" {
+			hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			if err != nil {
+				log.Printf("handlePosts POST bcrypt: %v", err)
+				http.Error(w, "Internal server error", 500)
+				return
+			}
+			s := string(hash)
+			passwordHash = &s
+		}
+		var p Post
 		err := db.QueryRow(
-			"INSERT INTO posts (title, content, author) VALUES ($1, $2, $3) RETURNING id, created_at",
-			p.Title, p.Content, p.Author,
+			"INSERT INTO posts (title, content, author, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+			req.Title, req.Content, author, passwordHash,
 		).Scan(&p.ID, &p.CreatedAt)
 		if err != nil {
 			log.Printf("handlePosts POST: %v", err)
 			http.Error(w, "Internal server error", 500)
 			return
 		}
+		p.Title = req.Title
+		p.Content = req.Content
+		p.Author = author
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(201)
 		json.NewEncoder(w).Encode(p)
@@ -220,10 +239,22 @@ func handlePostByID(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Title   string `json:"title"`
 			Content string `json:"content"`
+			Password string `json:"password"`
 		}
 		json.NewDecoder(r.Body).Decode(&req)
 		if req.Title == "" || req.Content == "" {
 			http.Error(w, "Title and content required", 400)
+			return
+		}
+		// 비밀번호 검증
+		if req.Password == "" {
+			http.Error(w, "Password required", 401)
+			return
+		}
+		var hash sql.NullString
+		db.QueryRow("SELECT password_hash FROM posts WHERE id=$1 AND deleted_at IS NULL", postID).Scan(&hash)
+		if !hash.Valid || bcrypt.CompareHashAndPassword([]byte(hash.String), []byte(req.Password)) != nil {
+			http.Error(w, "Invalid password", 401)
 			return
 		}
 		result, err := db.Exec(
@@ -247,6 +278,20 @@ func handlePostByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(p)
 
 	case "DELETE":
+		var req struct {
+			Password string `json:"password"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Password == "" {
+			http.Error(w, "Password required", 401)
+			return
+		}
+		var hash sql.NullString
+		db.QueryRow("SELECT password_hash FROM posts WHERE id=$1 AND deleted_at IS NULL", postID).Scan(&hash)
+		if !hash.Valid || bcrypt.CompareHashAndPassword([]byte(hash.String), []byte(req.Password)) != nil {
+			http.Error(w, "Invalid password", 401)
+			return
+		}
 		result, err := db.Exec(
 			"UPDATE posts SET deleted_at=NOW() WHERE id=$1 AND deleted_at IS NULL",
 			postID,
@@ -295,9 +340,7 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 		var c Comment
 		json.NewDecoder(r.Body).Decode(&c)
 		c.PostID = postID
-		if c.Author == "" {
-			c.Author = "Anonymous"
-		}
+		c.Author = "나그네"
 		err := db.QueryRow(
 			"INSERT INTO comments (post_id, content, author) VALUES ($1, $2, $3) RETURNING id, created_at",
 			c.PostID, c.Content, c.Author,

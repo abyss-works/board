@@ -7,14 +7,14 @@ const router = useRouter()
 const store = usePostStore()
 const title = ref('')
 const content = ref('')
-const author = ref('')
+const password = ref('')
 
 async function submit() {
   if (!title.value.trim() || !content.value.trim()) return
   const post = await store.addPost({
     title: title.value,
     content: content.value,
-    author: author.value || '익명',
+    password: password.value || undefined,
   })
   router.push(`/posts/${post.id}`)
 }
@@ -50,10 +50,11 @@ async function submit() {
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-500 mb-1.5">이름 (선택)</label>
+        <label class="block text-sm font-medium text-gray-500 mb-1.5">비밀번호 (선택)</label>
         <input
-          v-model="author"
-          placeholder="익명"
+          v-model="password"
+          type="password"
+          placeholder="수정/삭제 시 필요합니다"
           class="w-full px-3 py-2 bg-gray-50 rounded-md text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
         />
       </div>

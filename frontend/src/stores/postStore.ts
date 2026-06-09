@@ -29,8 +29,8 @@ export const usePostStore = defineStore('post', () => {
     return updated
   }
 
-  async function removePost(id: number) {
-    await apiDeletePost(id)
+  async function removePost(id: number, password: string) {
+    await apiDeletePost(id, password)
     posts.value = posts.value.filter(p => p.id !== id)
   }
 

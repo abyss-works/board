@@ -17,12 +17,13 @@ export interface Comment {
 export interface CreatePostRequest {
   title: string
   content: string
-  author: string
+  password?: string
 }
 
 export interface UpdatePostRequest {
   title: string
   content: string
+  password: string
 }
 
 export interface CreateCommentRequest {
