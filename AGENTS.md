@@ -86,6 +86,16 @@ go vet ./...                          # 정적 분석
 - `v*` 태그 push → GitHub Release 자동 생성 + 버전별 Docker 이미지 빌드
 - 버전은 `vMAJOR.MINOR.PATCH` (SemVer)
 
+### 배포 전략
+
+실제 CI/CD 워크플로우는 main 브랜치와 PR Preview만 대상으로 한다:
+
+| 트리거 | 대상 | 설명 |
+|--------|------|------|
+| PR 생성/동기화 | Preview (`preview` 네임스페이스) | PR별 임시 도메인, PR 종료 시 자동 정리 |
+| `main` 브랜치 push | Production (`board-prod`) | PR merge 시 자동 배포 |
+| `v*` 태그 push | Production + GitHub Release | 버전 이미지 생성, Release 노트 자동 작성 |
+
 ### 커밋 메시지
 
 - 타입: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`
