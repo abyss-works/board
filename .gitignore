@@ -2,3 +2,4 @@ community-board
 *.exe
 .env
 .secret.env
+board
