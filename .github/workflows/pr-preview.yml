@@ -1,0 +1,49 @@
+name: PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, closed]
+
+jobs:
+  deploy-preview:
+    if: github.event.action != 'closed'
+    runs-on: [self-hosted, preview]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t board:pr-${{ github.event.number }} .
+
+      - name: Load image into kind cluster
+        run: kind load docker-image board:pr-${{ github.event.number }} --name kind
+
+      - name: Deploy preview to k8s
+        run: |
+          PR_NUMBER=${{ github.event.number }} envsubst < k8s/preview.yaml | kubectl apply -f -
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/board-preview-${{ github.event.number }} -n preview --timeout=180s
+
+      - name: Comment preview URL on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.number }} \
+            --repo ${{ github.repository }} \
+            --body "🚀 Preview ready: https://preview-${{ github.event.number }}.board.abyssworks.dev"
+
+  cleanup-preview:
+    if: github.event.action == 'closed'
+    runs-on: [self-hosted, preview]
+    steps:
+      - name: Delete preview resources
+        run: |
+          kubectl delete deployment,service,ingress \
+            -l pr-number=${{ github.event.number }} \
+            -n preview \
+            --ignore-not-found
+
+      - name: Remove Docker image
+        run: |
+          docker rmi board:pr-${{ github.event.number }} || true
