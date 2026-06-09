@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: "community.abyssworks.blog"
+  - host: "board.abyssworks.dev"
     http:
       paths:
       - path: /
