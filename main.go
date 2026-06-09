@@ -162,6 +162,7 @@ func handlePosts(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(201)
 		json.NewEncoder(w).Encode(p)
 
@@ -241,6 +242,7 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(201)
 		json.NewEncoder(w).Encode(c)
 
