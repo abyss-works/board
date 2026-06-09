@@ -1,4 +1,4 @@
-module community-board
+module github.com/abyss-works/board
 
 go 1.22.2
 
