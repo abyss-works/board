@@ -147,6 +147,7 @@ func handlePosts(w http.ResponseWriter, r *http.Request) {
 		if posts == nil {
 			posts = []Post{}
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(posts)
 
 	case "POST":
@@ -201,6 +202,7 @@ func handlePostByID(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Post not found", 404)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(p)
 		return
 	}
@@ -228,6 +230,7 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 		if comments == nil {
 			comments = []Comment{}
 		}
+		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(comments)
 
 	case "POST":
