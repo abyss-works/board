@@ -73,7 +73,7 @@ kubectl apply -f ingress.yaml
 | 파일 | 내용 |
 |------|------|
 | `postgres.yaml` | PostgreSQL StatefulSet + Service |
-| `app.yaml` | community-board Deployment + Service |
+| `app.yaml` | board Deployment + Service |
 | `ingress.yaml` | Ingress 라우팅 |
 | `Dockerfile` | 멀티스테이지 Go 빌드 → 경량 실행 이미지 |
 
@@ -88,9 +88,9 @@ kubectl apply -f ingress.yaml
 
 # 빌드
 
-- **백엔드**: `go build -o community-board .` → 단일 바이너리 생성
+- **백엔드**: `go build -o board .` → 단일 바이너리 생성
 - **프론트엔드**: `npm run build` → `dist/` 정적 파일 생성 (추후)
-- **Docker**: `docker build -t community-board .`
+- **Docker**: `docker build -t board .`
 
 ---
 

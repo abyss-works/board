@@ -1,21 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: community-board
+  name: board
   namespace: board-prod
+  labels:
+    app: board
+    project: board
+    environment: prod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: community-board
+      app: board
   template:
     metadata:
       labels:
-        app: community-board
+        app: board
+        project: board
+        environment: prod
     spec:
       containers:
-      - name: community-board
-        image: community-board:latest
+      - name: board
+        image: board:prod
         imagePullPolicy: IfNotPresent
         env:
         - name: DB_HOST
@@ -36,11 +42,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: community-board
+  name: board
   namespace: board-prod
+  labels:
+    app: board
+    project: board
+    environment: prod
 spec:
   selector:
-    app: community-board
+    app: board
   ports:
   - port: 80
     targetPort: 8080

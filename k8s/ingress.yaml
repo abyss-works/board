@@ -1,8 +1,11 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: community-board
+  name: board
   namespace: board-prod
+  labels:
+    project: board
+    environment: prod
 spec:
   ingressClassName: nginx
   rules:
@@ -13,6 +16,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: community-board
+            name: board
             port:
               number: 80

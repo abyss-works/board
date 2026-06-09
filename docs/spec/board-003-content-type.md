@@ -235,7 +235,7 @@ new Date(...) → 정상 날짜 객체
 
 ```bash
 # 서버 실행
-cd /home/ubuntu/springboot-app/community-board
+cd /home/ubuntu/springboot-app/board
 DATABASE_URL="postgres://..." go run . &
 SERVER_PID=$!
 sleep 3

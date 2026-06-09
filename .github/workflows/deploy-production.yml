@@ -11,14 +11,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t community-board:production .
+        run: docker build -t board:prod .
 
       - name: Load image into kind cluster
-        run: kind load docker-image community-board:production --name kind
+        run: kind load docker-image board:prod --name kind
 
       - name: Deploy to prod
         run: |
-          kubectl set image deployment/community-board \
-            community-board=community-board:production \
+          kubectl set image deployment/board \
+            board=board:prod \
             -n board-prod
-          kubectl rollout status deployment/community-board -n board-prod --timeout=180s
+          kubectl rollout status deployment/board -n board-prod --timeout=180s

@@ -11,11 +11,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY main.go .
 COPY --from=frontend /frontend/dist ./frontend/dist
-RUN CGO_ENABLED=0 GOOS=linux go build -o community-board .
+RUN CGO_ENABLED=0 GOOS=linux go build -o board .
 
 FROM alpine:3.20
 RUN apk --no-cache add ca-certificates
 WORKDIR /app
-COPY --from=builder /app/community-board .
+COPY --from=builder /app/board .
 EXPOSE 8080
-CMD ["./community-board"]
+CMD ["./board"]

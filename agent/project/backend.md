@@ -24,7 +24,7 @@
 지속적 개발을 위해 다음 구조로 점진적 분리한다:
 
 ```
-community-board/
+board/
   main.go              # 진입점: DB 초기화, 라우트 등록, 서버 시작
   handler/             # HTTP 핸들러 — 요청 파싱, 응답 직렬화
     post.go

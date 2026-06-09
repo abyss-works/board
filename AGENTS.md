@@ -14,7 +14,7 @@
 | DB | PostgreSQL (lib/pq) |
 | API | REST (net/http, no framework) |
 | 프론트엔드 | 임베디드 정적 파일 (`embed.FS`) |
-| 빌드 | `go build -o community-board .` |
+| 빌드 | `go build -o board .` |
 | 배포 | Docker → kind k8s 클러스터 |
 
 ## 디렉토리 구조
@@ -37,7 +37,7 @@ board/
 ## 빌드 & 테스트
 
 ```bash
-go build -o community-board .        # 빌드
+go build -o board .        # 빌드
 go vet ./...                          # 정적 분석
 # 테스트: (현재 테스트 파일 없음 — 추후 추가)
 ```
