@@ -86,9 +86,30 @@ go vet ./...                          # 정적 분석
 - `v*` 태그 push → GitHub Release 자동 생성 + 버전별 Docker 이미지 빌드
 - 버전은 `vMAJOR.MINOR.PATCH` (SemVer)
 
+### 배포 전략
+
+실제 CI/CD 워크플로우는 main 브랜치와 PR Preview만 대상으로 한다:
+
+| 트리거 | 대상 | 설명 |
+|--------|------|------|
+| PR 생성/동기화 | Preview (`preview` 네임스페이스) | PR별 임시 도메인, PR 종료 시 자동 정리 |
+| `main` 브랜치 push | Production (`board-prod`) | PR merge 시 자동 배포 |
+| `v*` 태그 push | Production + GitHub Release | 버전 이미지 생성, Release 노트 자동 작성 |
+
 ### 커밋 메시지
 
 - 타입: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`, `test:`
 - 제목: 한글 30자 이내, 명사형 종결
 - 본문: 불릿 리스트, 파일 단위 변경 추적
 - 커밋 단위: 원자적, 계층별 분리 (Data → API → UI → Docs)
+
+---
+
+## 이슈 라벨 정책
+
+| 라벨 | 용도 | 작성자 |
+|------|------|--------|
+| `bug` | 확실한 버그 — 작동 오류, 예외, 크래시 | 누구나 |
+| `user-request` | 사용자의 가벼운 제안/개선 요청 | Commander(사용자 전달) |
+| `feature` | PM이 스펙 문서와 함께 정의한 기능 개발 | PM |
+| `enhancement` | 일반 개선 제안 (라벨 정책 정립 이전 레거시) | - |
