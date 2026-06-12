@@ -12,6 +12,7 @@ export interface Comment {
   content: string
   author: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface CreatePostRequest {
@@ -28,5 +29,10 @@ export interface UpdatePostRequest {
 
 export interface CreateCommentRequest {
   content: string
-  author: string
+  password?: string
+}
+
+export interface UpdateCommentRequest {
+  content: string
+  password: string
 }

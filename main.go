@@ -31,11 +31,12 @@ type Post struct {
 }
 
 type Comment struct {
-	ID        int       `json:"id"`
-	PostID    int       `json:"post_id"`
-	Content   string    `json:"content"`
-	Author    string    `json:"author"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int        `json:"id"`
+	PostID    int        `json:"post_id"`
+	Content   string     `json:"content"`
+	Author    string     `json:"author"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
 func getEnv(key, def string) string {
@@ -96,6 +97,9 @@ func initDB() {
 	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`)
 	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`)
 	db.Exec(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS password_hash TEXT`)
+	db.Exec(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS password_hash TEXT`)
+	db.Exec(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP`)
+	db.Exec(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP`)
 	log.Println("Database initialized successfully")
 }
 
@@ -106,6 +110,7 @@ func main() {
 	http.Handle("/", spaHandler())
 	http.HandleFunc("/api/posts", handlePosts)
 	http.HandleFunc("/api/posts/", handlePostByID)
+	http.HandleFunc("/api/comments/", handleCommentByID)
 	http.HandleFunc("/api/comments", handleComments)
 
 	port := getEnv("PORT", "8080")
@@ -316,7 +321,7 @@ func handlePostByID(w http.ResponseWriter, r *http.Request) {
 func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 	switch r.Method {
 	case "GET":
-		rows, err := db.Query("SELECT id, post_id, content, author, created_at FROM comments WHERE post_id=$1 ORDER BY created_at ASC", postID)
+		rows, err := db.Query("SELECT id, post_id, content, author, created_at FROM comments WHERE post_id=$1 AND deleted_at IS NULL ORDER BY created_at ASC", postID)
 		if err != nil {
 			log.Printf("handlePostComments GET: %v", err)
 			http.Error(w, "Internal server error", 500)
@@ -337,13 +342,29 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 		json.NewEncoder(w).Encode(comments)
 
 	case "POST":
+		var req struct {
+			Content  string `json:"content"`
+			Password string `json:"password"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		var passwordHash *string
+		if req.Password != "" {
+			hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			if err != nil {
+				log.Printf("handlePostComments POST bcrypt: %v", err)
+				http.Error(w, "Internal server error", 500)
+				return
+			}
+			s := string(hash)
+			passwordHash = &s
+		}
 		var c Comment
-		json.NewDecoder(r.Body).Decode(&c)
 		c.PostID = postID
+		c.Content = req.Content
 		c.Author = "나그네"
 		err := db.QueryRow(
-			"INSERT INTO comments (post_id, content, author) VALUES ($1, $2, $3) RETURNING id, created_at",
-			c.PostID, c.Content, c.Author,
+			"INSERT INTO comments (post_id, content, author, password_hash) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+			c.PostID, c.Content, c.Author, passwordHash,
 		).Scan(&c.ID, &c.CreatedAt)
 		if err != nil {
 			log.Printf("handlePostComments POST: %v", err)
@@ -353,6 +374,106 @@ func handlePostComments(w http.ResponseWriter, r *http.Request, postID int) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(201)
 		json.NewEncoder(w).Encode(c)
+
+	default:
+		http.Error(w, "Method not allowed", 405)
+	}
+}
+
+func handleCommentByID(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/comments/")
+	parts := strings.Split(path, "/")
+
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "Comment ID required", 400)
+		return
+	}
+
+	commentID, err := strconv.Atoi(parts[0])
+	if err != nil {
+		http.Error(w, "Invalid comment ID", 400)
+		return
+	}
+
+	switch r.Method {
+	case "PUT":
+		var req struct {
+			Content  string `json:"content"`
+			Password string `json:"password"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Content == "" {
+			http.Error(w, "Content required", 400)
+			return
+		}
+		if req.Password == "" {
+			http.Error(w, "Password required", 401)
+			return
+		}
+		var hash sql.NullString
+		db.QueryRow("SELECT password_hash FROM comments WHERE id=$1 AND deleted_at IS NULL", commentID).Scan(&hash)
+		if !hash.Valid {
+			http.Error(w, "Password not set for this comment", 400)
+			return
+		}
+		if bcrypt.CompareHashAndPassword([]byte(hash.String), []byte(req.Password)) != nil {
+			http.Error(w, "Invalid password", 401)
+			return
+		}
+		result, err := db.Exec(
+			"UPDATE comments SET content=$1, updated_at=NOW() WHERE id=$2 AND deleted_at IS NULL",
+			req.Content, commentID,
+		)
+		if err != nil {
+			log.Printf("handleCommentByID PUT: %v", err)
+			http.Error(w, "Internal server error", 500)
+			return
+		}
+		affected, _ := result.RowsAffected()
+		if affected == 0 {
+			http.Error(w, "Comment not found", 404)
+			return
+		}
+		var c Comment
+		db.QueryRow("SELECT id, post_id, content, author, created_at, updated_at FROM comments WHERE id=$1", commentID).
+			Scan(&c.ID, &c.PostID, &c.Content, &c.Author, &c.CreatedAt, &c.UpdatedAt)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(c)
+
+	case "DELETE":
+		var req struct {
+			Password string `json:"password"`
+		}
+		json.NewDecoder(r.Body).Decode(&req)
+		if req.Password == "" {
+			http.Error(w, "Password required", 401)
+			return
+		}
+		var hash sql.NullString
+		db.QueryRow("SELECT password_hash FROM comments WHERE id=$1 AND deleted_at IS NULL", commentID).Scan(&hash)
+		if !hash.Valid {
+			http.Error(w, "Password not set for this comment", 400)
+			return
+		}
+		if bcrypt.CompareHashAndPassword([]byte(hash.String), []byte(req.Password)) != nil {
+			http.Error(w, "Invalid password", 401)
+			return
+		}
+		result, err := db.Exec(
+			"UPDATE comments SET deleted_at=NOW() WHERE id=$1 AND deleted_at IS NULL",
+			commentID,
+		)
+		if err != nil {
+			log.Printf("handleCommentByID DELETE: %v", err)
+			http.Error(w, "Internal server error", 500)
+			return
+		}
+		affected, _ := result.RowsAffected()
+		if affected == 0 {
+			http.Error(w, "Comment not found", 404)
+			return
+		}
+		w.WriteHeader(204)
 
 	default:
 		http.Error(w, "Method not allowed", 405)

@@ -13,6 +13,7 @@ const store = usePostStore()
 const post = ref<Post | null>(null)
 const comments = ref<Comment[]>([])
 const newComment = ref('')
+const newCommentPassword = ref('')
 const deleting = ref(false)
 const deletePassword = ref('')
 const showDeletePrompt = ref(false)
@@ -29,10 +30,20 @@ async function submitComment() {
   if (!newComment.value.trim()) return
   const comment = await createComment(postId, {
     content: newComment.value,
-    author: '나그네',
+    password: newCommentPassword.value || undefined,
   })
   comments.value.push(comment)
   newComment.value = ''
+  newCommentPassword.value = ''
+}
+
+function onCommentUpdated(updated: Comment) {
+  const idx = comments.value.findIndex(c => c.id === updated.id)
+  if (idx !== -1) comments.value[idx] = updated
+}
+
+function onCommentDeleted(commentId: number) {
+  comments.value = comments.value.filter(c => c.id !== commentId)
 }
 
 async function handleDelete() {
@@ -118,7 +129,11 @@ async function handleDelete() {
 
       <ul v-else class="space-y-4 mb-8">
         <li v-for="c in comments" :key="c.id">
-          <CommentItem :comment="c" />
+          <CommentItem
+            :comment="c"
+            @updated="onCommentUpdated"
+            @deleted="onCommentDeleted"
+          />
         </li>
       </ul>
 
@@ -129,12 +144,20 @@ async function handleDelete() {
           rows="3"
           class="w-full px-3 py-2 bg-gray-50 rounded-md text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
         />
-        <button
-          @click="submitComment"
-          class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-        >
-          댓글 작성
-        </button>
+        <div class="flex gap-2 items-end">
+          <input
+            v-model="newCommentPassword"
+            type="password"
+            placeholder="비밀번호 (수정/삭제 시 필요)"
+            class="flex-1 px-3 py-2 bg-gray-50 rounded-md text-sm border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+          />
+          <button
+            @click="submitComment"
+            class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors shrink-0"
+          >
+            댓글 작성
+          </button>
+        </div>
       </div>
     </section>
   </div>
