@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: board
+  namespace: board-prod
+  labels:
+    app: board
+    project: board
+    environment: prod
+spec:
+  selector:
+    app: board
+  ports:
+  - port: 80
+    targetPort: 8080
