@@ -9,3 +9,6 @@ resources:
   - board-svc.yaml
   - postgres.yaml
   - ingress.yaml
+images:
+- name: board
+  newTag: prod
