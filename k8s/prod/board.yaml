@@ -12,6 +12,8 @@ spec:
   selector:
     matchLabels:
       app: board
+      environment: prod
+      project: board
   template:
     metadata:
       labels:

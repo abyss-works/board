@@ -8,6 +8,8 @@ spec:
   selector:
     matchLabels:
       app: postgres
+      environment: prod
+      project: board
   template:
     metadata:
       labels:
