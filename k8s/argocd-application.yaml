@@ -2,14 +2,14 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: board-prod
-  namespace: argocd
+  namespace: default
 spec:
   destination:
     namespace: board-prod
     server: https://kubernetes.default.svc
   project: default
   source:
-    path: k8s
+    path: k8s/prod
     repoURL: https://github.com/abyss-works/board
     targetRevision: main
   syncPolicy:

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: board-preview-${PR_NUMBER}
+commonLabels:
+  project: board
+  environment: preview
+namePrefix: board-preview-${PR_NUMBER}-
+resources:
+  - preview.yaml
+  - preview-db.yaml
