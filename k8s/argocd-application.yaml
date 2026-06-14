@@ -11,7 +11,7 @@ spec:
   source:
     path: k8s/prod
     repoURL: https://github.com/abyss-works/board
-    targetRevision: feat/argocd-13
+    targetRevision: main
   syncPolicy:
     automated:
       prune: true
