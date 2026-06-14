@@ -28,11 +28,12 @@
 
 | 파일 | 내용 |
 |------|------|
-| [commit-convention.md](agent/commit-convention.md) | 커밋 메시지 형식, 컴포넌트 커밋 순서, 커밋 전 확인 사항 |
-| [history-logging.md](agent/history-logging.md) | 작업 히스토리 로깅 정책, 산출물 텍스트 형식 규칙 |
-| [backend.md](agent/project/backend.md) | 백엔드 기술 스택, 아키텍처, 엔티티, API, 보안 |
-| [frontend.md](agent/project/frontend.md) | 프론트엔드 기술 스택, 계층 아키텍처, 라우트, 인증 |
-| [infra.md](agent/project/infra.md) | 인프라 실행 방법, Git 전략, 컨테이너, CI/CD |
+|| [sdlc-workflow.md](agent/sdlc-workflow.md) | **SDLC 전반**: Phase→PR→Commit 모델, 브랜치 전략, 실행 순서, 문서 체계 |
+|| [commit-convention.md](agent/commit-convention.md) | 커밋 메시지 형식, 컴포넌트 커밋 순서, 커밋 전 확인 사항 |
+|| [history-logging.md](agent/history-logging.md) | 작업 히스토리 로깅 정책, 산출물 텍스트 형식 규칙 |
+|| [backend.md](agent/project/backend.md) | 백엔드 기술 스택, 아키텍처, 엔티티, API, 보안 |
+|| [frontend.md](agent/project/frontend.md) | 프론트엔드 기술 스택, 계층 아키텍처, 라우트, 인증 |
+|| [infra.md](agent/project/infra.md) | 인프라 실행 방법, Git 전략, 컨테이너, CI/CD |
 
 ---
 

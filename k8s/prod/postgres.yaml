@@ -1,35 +1,19 @@
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: preview
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-preview-pvc
-  namespace: preview
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-preview
-  namespace: preview
+  name: postgres
+  namespace: board-prod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: postgres-preview
+      app: postgres
+      environment: prod
+      project: board
   template:
     metadata:
       labels:
-        app: postgres-preview
+        app: postgres
     spec:
       containers:
       - name: postgres
@@ -49,16 +33,28 @@ spec:
       volumes:
       - name: pgdata
         persistentVolumeClaim:
-          claimName: postgres-preview-pvc
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: board-prod
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres-preview
-  namespace: preview
+  name: postgres
+  namespace: board-prod
 spec:
   selector:
-    app: postgres-preview
+    app: postgres
   ports:
   - port: 5432
     targetPort: 5432
