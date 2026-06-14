@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: board-prod
-  namespace: default
+  namespace: argocd
 spec:
   destination:
     namespace: board-prod
@@ -11,8 +11,10 @@ spec:
   source:
     path: k8s/prod
     repoURL: https://github.com/abyss-works/board
-    targetRevision: main
+    targetRevision: feat/argocd-13
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -5,6 +5,7 @@ commonLabels:
   project: board
   environment: prod
 resources:
+  - namespace.yaml
   - board.yaml
   - board-svc.yaml
   - postgres.yaml
